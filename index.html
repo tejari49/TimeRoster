@@ -57,6 +57,11 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 .message-bubble { max-width:70%; padding:10px 14px; border-radius:18px; }
 .chat-message.sent { justify-content:flex-end; }
 .chat-message.sent .message-bubble { background:var(--ios-blue); color:white; }
+.chat-message.received .message-bubble { background:var(--ios-card); color:var(--ios-text); box-shadow:0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.08); }
+.message-image { max-width:200px; border-radius:12px; margin-top:8px; cursor:pointer; }
+.message-voice { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.voice-play-btn { background:white; color:var(--ios-blue); border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.linked-user-item { padding:8px 12px; background:var(--ios-bg); border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
 .chat-input-container { display:flex; gap:8px; }
 .chat-input { flex:1; padding:10px 14px; border:none; border-radius:18px; background:var(--ios-bg); }
 .chat-send-btn { background:var(--ios-blue); color:white; border:none; width:36px; height:36px; border-radius:50%; cursor:pointer; }
@@ -176,6 +181,11 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 </div>
 <div class="card-body">
 <div class="chat-messages" id="chatMessages"></div>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<button onclick="document.getElementById('imageInput').click()" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">📷 Bild</button>
+<button onclick="startVoiceRecording()" id="voiceBtn" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">🎤 Sprache</button>
+<input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="sendImage(event)">
+</div>
 <div class="chat-input-container">
 <input type="text" id="chatInput" class="chat-input" placeholder="Nachricht...">
 <button onclick="sendMessage()" class="chat-send-btn">➤</button>
@@ -201,8 +211,17 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 <div class="ios-card">
 <div class="card-header"><div class="card-title">Chat Passwort</div></div>
 <div class="card-body">
+<input type="password" id="oldPasscode" class="ios-input" placeholder="Altes Passwort">
 <input type="password" id="newPasscode" class="ios-input" placeholder="Neues Passwort">
 <button onclick="setPasscode()" class="ios-button">Ändern</button>
+</div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Verknüpfte Benutzer</div></div>
+<div class="card-body">
+<input type="text" id="linkUserInput" class="ios-input" placeholder="Benutzer-ID eingeben" style="margin:0;">
+<button onclick="linkUser()" class="ios-button">Benutzer verknüpfen</button>
+<div id="linkedUsersList" style="margin-top:12px;"></div>
 </div>
 </div>
 <div class="ios-card">
@@ -259,7 +278,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 </div>
 
 <script>
-class DataStore{constructor(){this.events=this.load('events')||[];this.shifts=this.load('shifts')||[];this.todos=this.load('todos')||[];this.timeEntries=this.load('timeEntries')||[];this.currentSession=this.load('currentSession')||null;this.messages=this.load('messages')||[];this.passcode=this.load('passcode')||'1234';}load(key){const data=localStorage.getItem(key);return data?JSON.parse(data):null;}save(key,data){localStorage.setItem(key,JSON.stringify(data));}addEvent(event){event.id=Date.now();this.events.push(event);this.save('events',this.events);}addShift(shift){shift.id=Date.now();this.shifts.push(shift);this.save('shifts',this.shifts);}addTodo(todo){todo.id=Date.now();todo.completed=false;this.todos.push(todo);this.save('todos',this.todos);}toggleTodo(id){const todo=this.todos.find(t=>t.id===id);if(todo){todo.completed=!todo.completed;this.save('todos',this.todos);}}deleteTodo(id){this.todos=this.todos.filter(t=>t.id!==id);this.save('todos',this.todos);}clockIn(){this.currentSession={startTime:new Date().toISOString(),date:new Date().toISOString().split('T')[0]};this.save('currentSession',this.currentSession);}clockOut(){if(this.currentSession){const entry={id:Date.now(),date:this.currentSession.date,startTime:this.currentSession.startTime,endTime:new Date().toISOString()};this.timeEntries.push(entry);this.save('timeEntries',this.timeEntries);this.currentSession=null;this.save('currentSession',null);}}addMessage(text){const message={id:Date.now(),text:text,time:new Date().toISOString(),type:'sent'};this.messages.push(message);this.save('messages',this.messages);}clearMessages(){this.messages=[];this.save('messages',this.messages);}setPasscode(code){this.passcode=code;this.save('passcode',code);}exportData(){return{events:this.events,shifts:this.shifts,todos:this.todos,timeEntries:this.timeEntries,messages:this.messages};}importData(data){if(data.events){this.events=data.events;this.save('events',this.events);}if(data.shifts){this.shifts=data.shifts;this.save('shifts',this.shifts);}if(data.todos){this.todos=data.todos;this.save('todos',this.todos);}if(data.timeEntries){this.timeEntries=data.timeEntries;this.save('timeEntries',this.timeEntries);}if(data.messages){this.messages=data.messages;this.save('messages',this.messages);}}clearAll(){this.events=[];this.shifts=[];this.todos=[];this.timeEntries=[];this.currentSession=null;this.messages=[];localStorage.clear();this.passcode='1234';this.save('passcode','1234');}}
+class DataStore{constructor(){this.events=this.load('events')||[];this.shifts=this.load('shifts')||[];this.todos=this.load('todos')||[];this.timeEntries=this.load('timeEntries')||[];this.currentSession=this.load('currentSession')||null;this.messages=this.load('messages')||[];this.passcode=this.load('passcode')||'1234';this.linkedUsers=this.load('linkedUsers')||[];this.currentUser=this.load('currentUser')||'user_'+Date.now();}load(key){const data=localStorage.getItem(key);return data?JSON.parse(data):null;}save(key,data){localStorage.setItem(key,JSON.stringify(data));}addEvent(event){event.id=Date.now();this.events.push(event);this.save('events',this.events);}addShift(shift){shift.id=Date.now();this.shifts.push(shift);this.save('shifts',this.shifts);}addTodo(todo){todo.id=Date.now();todo.completed=false;this.todos.push(todo);this.save('todos',this.todos);}toggleTodo(id){const todo=this.todos.find(t=>t.id===id);if(todo){todo.completed=!todo.completed;this.save('todos',this.todos);}}deleteTodo(id){this.todos=this.todos.filter(t=>t.id!==id);this.save('todos',this.todos);}clockIn(){this.currentSession={startTime:new Date().toISOString(),date:new Date().toISOString().split('T')[0]};this.save('currentSession',this.currentSession);}clockOut(){if(this.currentSession){const entry={id:Date.now(),date:this.currentSession.date,startTime:this.currentSession.startTime,endTime:new Date().toISOString()};this.timeEntries.push(entry);this.save('timeEntries',this.timeEntries);this.currentSession=null;this.save('currentSession',null);}}addMessage(text,type='text',data=null){const message={id:Date.now(),text:text,time:new Date().toISOString(),type:'sent',messageType:type,data:data,from:this.currentUser};this.messages.push(message);this.save('messages',this.messages);}clearMessages(){this.messages=[];this.save('messages',this.messages);}setPasscode(oldCode,newCode){if(oldCode===this.passcode){this.passcode=newCode;this.save('passcode',newCode);return true;}return false;}linkUser(userId){if(!this.linkedUsers.includes(userId)){this.linkedUsers.push(userId);this.save('linkedUsers',this.linkedUsers);return true;}return false;}unlinkUser(userId){this.linkedUsers=this.linkedUsers.filter(u=>u!==userId);this.save('linkedUsers',this.linkedUsers);}exportData(){return{events:this.events,shifts:this.shifts,todos:this.todos,timeEntries:this.timeEntries,messages:this.messages};}importData(data){if(data.events){this.events=data.events;this.save('events',this.events);}if(data.shifts){this.shifts=data.shifts;this.save('shifts',this.shifts);}if(data.todos){this.todos=data.todos;this.save('todos',this.todos);}if(data.timeEntries){this.timeEntries=data.timeEntries;this.save('timeEntries',this.timeEntries);}if(data.messages){this.messages=data.messages;this.save('messages',this.messages);}}clearAll(){this.events=[];this.shifts=[];this.todos=[];this.timeEntries=[];this.currentSession=null;this.messages=[];localStorage.clear();this.passcode='1234';this.save('passcode','1234');}}
 
 const store=new DataStore();let currentMonth=new Date();let chatUnlocked=false;
 
@@ -298,17 +317,29 @@ function toggleTodo(id){store.toggleTodo(id);renderTodos();updateDashboard();}
 
 document.getElementById('todoInput')?.addEventListener('keypress',function(e){if(e.key==='Enter'&&this.value.trim()){store.addTodo({text:this.value.trim(),priority:'medium'});this.value='';renderTodos();updateDashboard();}});
 
-function renderChat(){const chatDiv=document.getElementById('chatMessages');if(store.messages.length===0){chatDiv.innerHTML='<p style="color:var(--ios-text-secondary);text-align:center;padding:20px;">Keine Nachrichten</p>';return;}chatDiv.innerHTML=store.messages.map(msg=>{const time=new Date(msg.time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});return`<div class="chat-message ${msg.type}"><div class="message-bubble">${msg.text}<div style="font-size:11px;margin-top:4px;">${time}</div></div></div>`;}).join('');chatDiv.scrollTop=chatDiv.scrollHeight;}
+function renderChat(){const chatDiv=document.getElementById('chatMessages');if(store.messages.length===0){chatDiv.innerHTML='<p style="color:var(--ios-text-secondary);text-align:center;padding:20px;">Keine Nachrichten</p>';return;}chatDiv.innerHTML=store.messages.map(msg=>{const time=new Date(msg.time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});let content='';if(msg.messageType==='image'){content=`<img src="${msg.data}" class="message-image" onclick="window.open('${msg.data}','_blank')" alt="Bild">`;}else if(msg.messageType==='voice'){content=`<div class="message-voice"><button class="voice-play-btn" onclick="playVoice('${msg.data}')">▶</button><span>Sprachnachricht</span></div>`;}else{content=msg.text;}return`<div class="chat-message ${msg.type}"><div class="message-bubble">${content}<div style="font-size:11px;margin-top:4px;">${time}</div></div></div>`;}).join('');chatDiv.scrollTop=chatDiv.scrollHeight;}
 
-function sendMessage(){const input=document.getElementById('chatInput');if(input.value.trim()){store.addMessage(input.value.trim());input.value='';renderChat();updateStorageInfo();}}
+function sendMessage(){const input=document.getElementById('chatInput');if(input.value.trim()){store.addMessage(input.value.trim(),'text',null);input.value='';renderChat();updateStorageInfo();}}
+
+function sendImage(event){const file=event.target.files[0];if(file&&file.type.startsWith('image/')){const reader=new FileReader();reader.onload=(e)=>{const base64=e.target.result;store.addMessage('Bild gesendet','image',base64);renderChat();updateStorageInfo();};reader.readAsDataURL(file);}}
+
+let mediaRecorder=null;let audioChunks=[];function startVoiceRecording(){const btn=document.getElementById('voiceBtn');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='🎤 Sprache';return;}navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{mediaRecorder=new MediaRecorder(stream);audioChunks=[];mediaRecorder.ondataavailable=e=>{audioChunks.push(e.data);};mediaRecorder.onstop=()=>{const audioBlob=new Blob(audioChunks,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{const base64=reader.result;store.addMessage('Sprachnachricht','voice',base64);renderChat();updateStorageInfo();stream.getTracks().forEach(track=>track.stop());};reader.readAsDataURL(audioBlob);};mediaRecorder.start();btn.textContent='⏹️ Stop';}).catch(err=>{alert('Mikrofon-Zugriff verweigert!');});}
+
+function playVoice(base64){const audio=new Audio(base64);audio.play();}
+
+function linkUser(){const input=document.getElementById('linkUserInput');if(input.value.trim()){if(store.linkUser(input.value.trim())){input.value='';renderLinkedUsers();alert('Benutzer verknüpft!');}else{alert('Benutzer bereits verknüpft!');}}}
+
+function unlinkUser(userId){if(confirm('Benutzer entfernen?')){store.unlinkUser(userId);renderLinkedUsers();}}
+
+function renderLinkedUsers(){const listDiv=document.getElementById('linkedUsersList');if(store.linkedUsers.length===0){listDiv.innerHTML='<p style="color:var(--ios-text-secondary);font-size:13px;">Keine verknüpften Benutzer</p>';return;}listDiv.innerHTML=store.linkedUsers.map(user=>`<div class="linked-user-item"><span>${user}</span><button onclick="unlinkUser('${user}')" style="background:var(--ios-red);color:white;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12px;">Entfernen</button></div>`).join('');}
 
 document.getElementById('chatInput')?.addEventListener('keypress',function(e){if(e.key==='Enter'){sendMessage();}});
 
 function clearChat(){if(confirm('Alle Nachrichten löschen?')){store.clearMessages();renderChat();updateStorageInfo();}}
 
-function updateStorageInfo(){document.getElementById('eventsCount').textContent=store.events.length;document.getElementById('shiftsCount').textContent=store.shifts.length;document.getElementById('todosCount').textContent=store.todos.length;document.getElementById('messagesCount').textContent=store.messages.length;}
+function updateStorageInfo(){document.getElementById('eventsCount').textContent=store.events.length;document.getElementById('shiftsCount').textContent=store.shifts.length;document.getElementById('todosCount').textContent=store.todos.length;document.getElementById('messagesCount').textContent=store.messages.length;renderLinkedUsers();}
 
-function setPasscode(){const newCode=document.getElementById('newPasscode').value;if(newCode&&newCode.length>=4){store.setPasscode(newCode);alert('Passwort geändert!');document.getElementById('newPasscode').value='';}else{alert('Passwort muss mindestens 4 Zeichen haben!');}}
+function setPasscode(){const oldCode=document.getElementById('oldPasscode').value;const newCode=document.getElementById('newPasscode').value;if(!oldCode||!newCode){alert('Bitte beide Felder ausfüllen!');return;}if(newCode.length<4){alert('Neues Passwort muss mindestens 4 Zeichen haben!');return;}if(store.setPasscode(oldCode,newCode)){alert('Passwort erfolgreich geändert!');document.getElementById('oldPasscode').value='';document.getElementById('newPasscode').value='';}else{alert('Altes Passwort ist falsch!');}}
 
 function exportData(){const data=store.exportData();const json=JSON.stringify(data,null,2);const blob=new Blob([json],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`timeroster-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);}
 
