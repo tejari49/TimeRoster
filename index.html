@@ -819,7 +819,8 @@
         let shifts = Storage.get('shifts');
         let todos = Storage.get('todos');
         let timeLogs = Storage.get('timeLogs');
-        let trackingSession = Storage.get('trackingSession')[0] || null;
+        let trackingSessionArray = Storage.get('trackingSession');
+        let trackingSession = trackingSessionArray.length > 0 ? trackingSessionArray[0] : null;
 
         // Module Navigation
         function showModule(moduleName) {
@@ -921,7 +922,7 @@
             const description = document.getElementById('eventDescription').value;
 
             if (!title || !date || !time) {
-                alert('Please fill in all required fields');
+                alert('Please fill in all required fields: Event Title, Date, and Time');
                 return;
             }
 
@@ -984,7 +985,7 @@
             const notes = document.getElementById('shiftNotes').value;
 
             if (!name || !startDate || !endDate || !startTime || !endTime) {
-                alert('Please fill in all required fields');
+                alert('Please fill in all required fields: Shift Name, Start Date, End Date, Start Time, and End Time');
                 return;
             }
 
@@ -1076,19 +1077,22 @@
             }
 
             const sortedLogs = [...timeLogs].reverse();
-            timeLogList.innerHTML = sortedLogs.map((log, index) => `
-                <div class="list-item">
-                    <div class="list-item-content">
-                        <div class="list-item-title">${log.date}</div>
-                        <div class="list-item-subtitle">
-                            ${log.startTime} → ${log.endTime} (${log.duration} minutes)
+            timeLogList.innerHTML = sortedLogs.map((log) => {
+                const logIndex = timeLogs.length - 1 - sortedLogs.indexOf(log);
+                return `
+                    <div class="list-item">
+                        <div class="list-item-content">
+                            <div class="list-item-title">${log.date}</div>
+                            <div class="list-item-subtitle">
+                                ${log.startTime} → ${log.endTime} (${log.duration} minutes)
+                            </div>
+                        </div>
+                        <div class="list-item-actions">
+                            <button class="btn btn-danger btn-small" onclick="deleteTimeLog(${logIndex})">Delete</button>
                         </div>
                     </div>
-                    <div class="list-item-actions">
-                        <button class="btn btn-danger btn-small" onclick="deleteTimeLog(${timeLogs.length - 1 - index})">Delete</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function deleteTimeLog(index) {
@@ -1125,7 +1129,7 @@
             const text = input.value.trim();
             
             if (!text) {
-                alert('Please enter a todo item');
+                alert('Please enter a TODO');
                 return;
             }
 
