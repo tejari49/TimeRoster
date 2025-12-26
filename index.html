@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TimeRoster - iOS Style</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+    --ios-blue:#007AFF; --ios-green:#34C759; --ios-red:#FF3B30; --ios-orange:#FF9500;
+    --ios-bg:#F2F2F7; --ios-card:#FFF; --ios-separator:rgba(60,60,67,0.36);
+    --ios-text:#000; --ios-text-secondary:#8E8E93;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; background:var(--ios-bg); color:var(--ios-text); line-height:1.47; -webkit-font-smoothing:antialiased; }
+.app { min-height:100vh; padding-bottom:65px; }
+.nav-bar { position:fixed; top:0; left:0; right:0; height:44px; background:rgba(242,242,247,0.8); backdrop-filter:blur(20px); border-bottom:0.5px solid var(--ios-separator); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.nav-title { font-size:17px; font-weight:600; }
+.content { margin-top:44px; padding:16px; }
+.ios-card { background:var(--ios-card); border-radius:10px; margin-bottom:16px; box-shadow:0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.08); }
+.card-header { padding:12px 16px; border-bottom:0.5px solid var(--ios-separator); }
+.card-title { font-size:17px; font-weight:600; }
+.card-body { padding:16px; }
+.ios-button { background:var(--ios-blue); color:white; border:none; border-radius:10px; padding:12px 20px; font-size:17px; font-weight:600; cursor:pointer; width:100%; margin-bottom:12px; }
+.ios-button:active { opacity:0.6; }
+.ios-button-secondary { background:var(--ios-bg); color:var(--ios-blue); }
+.ios-button-danger { background:var(--ios-red); }
+.stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:16px; }
+.stat-card { background:var(--ios-card); border-radius:10px; padding:16px; box-shadow:0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.08); }
+.stat-label { font-size:11px; color:var(--ios-text-secondary); margin-bottom:8px; text-transform:uppercase; }
+.stat-value { font-size:28px; font-weight:700; }
+.stat-blue { color:var(--ios-blue); }
+.stat-green { color:var(--ios-green); }
+.stat-orange { color:var(--ios-orange); }
+.stat-red { color:var(--ios-red); }
+.ios-list { background:var(--ios-card); border-radius:10px; overflow:hidden; box-shadow:0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.08); }
+.ios-list-item { padding:12px 16px; border-bottom:0.5px solid var(--ios-separator); }
+.ios-list-item:last-child { border-bottom:none; }
+.ios-input { width:100%; padding:12px; border:none; border-radius:10px; background:var(--ios-bg); font-size:17px; font-family:inherit; margin-bottom:12px; }
+.tab-bar { position:fixed; bottom:0; left:0; right:0; height:49px; background:rgba(242,242,247,0.8); backdrop-filter:blur(20px); border-top:0.5px solid var(--ios-separator); display:flex; z-index:1000; }
+.tab-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; }
+.tab-icon { font-size:24px; margin-bottom:2px; }
+.tab-label { font-size:10px; color:var(--ios-text-secondary); }
+.tab-item.active .tab-label { color:var(--ios-blue); }
+.page { display:none; }
+.page.active { display:block; }
+.calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-top:12px; }
+.calendar-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; }
+.calendar-day.today { background:var(--ios-blue); color:white; font-weight:600; }
+.view-tab { flex:1; padding:12px; background:none; border:none; cursor:pointer; color:var(--ios-text-secondary); font-size:15px; font-weight:500; border-bottom:2px solid transparent; transition:all 0.2s; }
+.view-tab.active { color:var(--ios-blue); border-bottom-color:var(--ios-blue); font-weight:600; }
+.week-grid { display:grid; grid-template-columns:60px repeat(7,1fr); gap:1px; background:var(--ios-separator); border:0.5px solid var(--ios-separator); border-radius:8px; overflow:hidden; font-size:13px; }
+.week-header { background:var(--ios-card); padding:8px; text-align:center; font-weight:600; font-size:11px; color:var(--ios-text-secondary); }
+.week-time-slot { background:var(--ios-card); padding:8px 4px; text-align:center; font-size:11px; color:var(--ios-text-secondary); }
+.week-day-slot { background:var(--ios-card); padding:4px; min-height:60px; position:relative; }
+.day-schedule { max-height:600px; overflow-y:auto; position:relative; }
+.day-time-slot { display:grid; grid-template-columns:60px 1fr; gap:1px; background:var(--ios-separator); border-bottom:0.5px solid var(--ios-separator); min-height:60px; }
+.day-time-label { padding:8px; font-size:11px; color:var(--ios-text-secondary); text-align:center; }
+.day-hour-area { background:var(--ios-card); padding:4px; position:relative; }
+.event-bar { position:absolute; left:2px; right:2px; padding:4px 6px; border-radius:4px; font-size:11px; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; color:white; font-weight:500; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+.list-event-item { padding:12px 16px; border-bottom:0.5px solid var(--ios-separator); cursor:pointer; }
+.list-event-item:hover { background:rgba(0,122,255,0.05); }
+.list-date-header { padding:12px 16px; background:var(--ios-bg); font-weight:600; font-size:15px; position:sticky; top:0; }
+.now-line { position:absolute; left:60px; right:0; height:2px; background:var(--ios-red); z-index:10; }
+.now-line::before { content:''; position:absolute; left:-6px; top:-3px; width:8px; height:8px; background:var(--ios-red); border-radius:50%; }
+.modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:2000; align-items:flex-end; justify-content:center; }
+.modal.active { display:flex; }
+.modal-content { background:var(--ios-card); border-radius:14px 14px 0 0; width:100%; max-height:80vh; overflow-y:auto; }
+.modal-header { padding:16px; border-bottom:0.5px solid var(--ios-separator); display:flex; justify-content:space-between; }
+.modal-body { padding:16px; }
+.chat-messages { height:400px; overflow-y:auto; margin-bottom:16px; padding:12px; background:var(--ios-bg); border-radius:10px; }
+.chat-message { margin-bottom:12px; display:flex; }
+.message-bubble { max-width:70%; padding:10px 14px; border-radius:18px; }
+.chat-message.sent { justify-content:flex-end; }
+.chat-message.sent .message-bubble { background:var(--ios-blue); color:white; }
+.chat-message.received .message-bubble { background:var(--ios-card); color:var(--ios-text); box-shadow:0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.08); }
+.message-image { max-width:200px; border-radius:12px; margin-top:8px; cursor:pointer; }
+.message-voice { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.voice-play-btn { background:white; color:var(--ios-blue); border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.linked-user-item { padding:8px 12px; background:var(--ios-bg); border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+.chat-input-container { display:flex; gap:8px; }
+.chat-input { flex:1; padding:10px 14px; border:none; border-radius:18px; background:var(--ios-bg); }
+.chat-send-btn { background:var(--ios-blue); color:white; border:none; width:36px; height:36px; border-radius:50%; cursor:pointer; }
+.lock-screen { position:fixed; top:0; left:0; right:0; bottom:0; background:var(--ios-bg); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:3000; padding:20px; }
+.lock-screen.active { display:flex; }
+.lock-icon { font-size:60px; margin-bottom:20px; }
+.todo-item { display:flex; align-items:center; padding:12px 16px; border-bottom:0.5px solid var(--ios-separator); }
+.todo-checkbox { width:22px; height:22px; border:2px solid var(--ios-blue); border-radius:50%; margin-right:12px; cursor:pointer; }
+.todo-checkbox.checked { background:var(--ios-blue); }
+.time-display { text-align:center; padding:40px 20px; }
+.current-time { font-size:48px; font-weight:700; color:var(--ios-blue); margin-bottom:20px; }
+.calendar-chip { display:inline-flex; align-items:center; padding:6px 12px; border-radius:20px; cursor:pointer; border:2px solid transparent; transition:all 0.2s; }
+.calendar-chip.selected { border-color:currentColor; font-weight:600; }
+.calendar-item { background:var(--ios-bg); padding:12px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+.calendar-dot { width:12px; height:12px; border-radius:50%; margin-right:8px; display:inline-block; }
+@media (max-width:767px) {
+    .desktop-only { display:none; }
+}
+@media (min-width:768px) {
+    .app { display:flex; max-width:1200px; margin:0 auto; padding-bottom:0; }
+    .sidebar-desktop { width:280px; background:var(--ios-card); border-right:0.5px solid var(--ios-separator); position:sticky; top:0; height:100vh; }
+    .sidebar-item { padding:12px 20px; cursor:pointer; display:flex; align-items:center; }
+    .sidebar-item.active { background:rgba(0,122,255,0.1); color:var(--ios-blue); }
+    .nav-bar, .tab-bar { display:none; }
+    .content { flex:1; margin-top:0; padding:32px; }
+    .stats-grid { grid-template-columns:repeat(4,1fr); }
+    .mobile-only { display:none; }
+    .desktop-only { display:block; }
+}
+</style>
+</head>
+<body>
+<div id="lockScreen" class="lock-screen">
+<div class="lock-icon">🔒</div>
+<h2>Secret Chat</h2>
+<p style="color:var(--ios-text-secondary);margin-bottom:30px;">Passwort eingeben</p>
+<input type="password" id="lockPasscode" class="ios-input" placeholder="Passwort" style="max-width:280px;">
+<button onclick="unlockChat()" class="ios-button" style="max-width:280px;">Entsperren</button>
+<button onclick="closeLock()" class="ios-button ios-button-secondary" style="max-width:280px;">Abbrechen</button>
+</div>
+
+<div class="app">
+<div class="sidebar-desktop desktop-only">
+<div style="padding:20px;font-size:24px;font-weight:700;">⏰ TimeRoster</div>
+<div class="sidebar-item active" onclick="navigate('dashboard')">📊 Dashboard</div>
+<div class="sidebar-item" onclick="navigate('calendar')">📅 Kalender</div>
+<div class="sidebar-item" onclick="navigate('shifts')">👥 Schichten</div>
+<div class="sidebar-item" onclick="navigate('timetracking')">⏱️ Zeiterfassung</div>
+<div class="sidebar-item" onclick="navigate('todos')">✓ Aufgaben</div>
+<div class="sidebar-item" onclick="navigate('chat')">💬 Secret Chat</div>
+<div class="sidebar-item" onclick="navigate('settings')">⚙️ Einstellungen</div>
+</div>
+
+<div style="flex:1;">
+<div class="nav-bar mobile-only">
+<div class="nav-title" id="navTitle">Dashboard</div>
+</div>
+
+<div class="content">
+<div id="dashboard" class="page active">
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-label">Stunden/Woche</div><div class="stat-value stat-blue" id="weekHours">0.0h</div></div>
+<div class="stat-card"><div class="stat-label">Erledigt</div><div class="stat-value stat-green" id="completedTasks">0</div></div>
+<div class="stat-card"><div class="stat-label">Schichten</div><div class="stat-value stat-orange" id="upcomingShifts">0</div></div>
+<div class="stat-card"><div class="stat-label">Offen</div><div class="stat-value stat-red" id="pendingTodos">0</div></div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Heutige Termine</div></div>
+<div class="card-body" id="todayEvents"><p style="color:var(--ios-text-secondary);">Keine Termine</p></div>
+</div>
+</div>
+
+<div id="calendar" class="page">
+<div class="ios-card" style="margin-bottom:16px;">
+<div class="card-header"><div class="card-title">Kalender auswählen</div></div>
+<div class="card-body">
+<div id="calendarSelector" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+</div>
+</div>
+<div class="ios-card" style="margin-bottom:16px;">
+<div style="display:flex;border-bottom:0.5px solid var(--ios-separator);overflow-x:auto;">
+<button class="view-tab active" onclick="changeView('month')">Monat</button>
+<button class="view-tab" onclick="changeView('week')">Woche</button>
+<button class="view-tab" onclick="changeView('day')">Tag</button>
+<button class="view-tab" onclick="changeView('list')">Liste</button>
+</div>
+<div class="card-body">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<button onclick="prevPeriod()" class="ios-button ios-button-secondary" style="width:auto;padding:8px 16px;margin:0;">‹</button>
+<div id="calendarTitle" style="font-weight:600;font-size:17px;">Dezember 2025</div>
+<button onclick="nextPeriod()" class="ios-button ios-button-secondary" style="width:auto;padding:8px 16px;margin:0;">›</button>
+</div>
+<div id="calendarViewContainer"></div>
+</div>
+</div>
+<button onclick="openEventModal()" class="ios-button">+ Neuer Termin</button>
+</div>
+
+<div id="shifts" class="page">
+<button onclick="openShiftModal()" class="ios-button">+ Neue Schicht</button>
+<div class="ios-list" id="shiftsList"></div>
+</div>
+
+<div id="timetracking" class="page">
+<div class="ios-card">
+<div class="time-display">
+<div class="current-time" id="currentTime">00:00:00</div>
+<div style="margin-bottom:20px;color:var(--ios-text-secondary);" id="statusText">Nicht gestempelt</div>
+<button id="clockBtn" onclick="toggleClock()" class="ios-button">Einstempeln</button>
+</div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Protokoll</div></div>
+<div id="timeLog"></div>
+</div>
+</div>
+
+<div id="todos" class="page">
+<div class="ios-card" style="margin-bottom:16px;">
+<div class="card-body">
+<input type="text" id="todoInput" class="ios-input" placeholder="Neue Aufgabe..." style="margin:0;">
+</div>
+</div>
+<div class="ios-card"><div id="todoList"></div></div>
+</div>
+
+<div id="chat" class="page">
+<div class="ios-card">
+<div class="card-header">
+<div class="card-title">💬 Secret Chat</div>
+<button onclick="clearChat()" style="background:var(--ios-red);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;">Löschen</button>
+</div>
+<div class="card-body">
+<div class="chat-messages" id="chatMessages"></div>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<button onclick="document.getElementById('imageInput').click()" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">📷 Bild</button>
+<button onclick="startVoiceRecording()" id="voiceBtn" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">🎤 Sprache</button>
+<input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="sendImage(event)">
+</div>
+<div class="chat-input-container">
+<input type="text" id="chatInput" class="chat-input" placeholder="Nachricht...">
+<button onclick="sendMessage()" class="chat-send-btn">➤</button>
+</div>
+</div>
+</div>
+<div class="ios-card">
+<div class="card-body">
+<p style="font-size:13px;color:var(--ios-text-secondary);text-align:center;">🔒 Nachrichten werden lokal verschlüsselt</p>
+</div>
+</div>
+</div>
+
+<div id="settings" class="page">
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Kalender verwalten</div></div>
+<div class="card-body">
+<button onclick="openCalendarModal()" class="ios-button">+ Neuer Kalender</button>
+<div id="calendarManagement" style="margin-top:12px;"></div>
+</div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Daten</div></div>
+<div class="card-body">
+<button onclick="exportData()" class="ios-button">📥 Exportieren</button>
+<button onclick="document.getElementById('importFile').click()" class="ios-button ios-button-secondary">📤 Importieren</button>
+<input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+</div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Chat Passwort</div></div>
+<div class="card-body">
+<input type="password" id="oldPasscode" class="ios-input" placeholder="Altes Passwort">
+<input type="password" id="newPasscode" class="ios-input" placeholder="Neues Passwort">
+<button onclick="setPasscode()" class="ios-button">Ändern</button>
+</div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Verknüpfte Benutzer</div></div>
+<div class="card-body">
+<input type="text" id="linkUserInput" class="ios-input" placeholder="Benutzer-ID eingeben" style="margin:0;">
+<button onclick="linkUser()" class="ios-button">Benutzer verknüpfen</button>
+<div id="linkedUsersList" style="margin-top:12px;"></div>
+</div>
+</div>
+<div class="ios-card">
+<div class="card-header"><div class="card-title">Speicher</div></div>
+<div class="ios-list">
+<div class="ios-list-item">Termine: <span id="eventsCount">0</span></div>
+<div class="ios-list-item">Schichten: <span id="shiftsCount">0</span></div>
+<div class="ios-list-item">Aufgaben: <span id="todosCount">0</span></div>
+<div class="ios-list-item">Nachrichten: <span id="messagesCount">0</span></div>
+</div>
+</div>
+<button onclick="clearAllData()" class="ios-button ios-button-danger">🗑️ Alle Daten löschen</button>
+</div>
+</div>
+
+<div class="tab-bar mobile-only">
+<div class="tab-item active" onclick="navigate('dashboard')"><div class="tab-icon">📊</div><div class="tab-label">Home</div></div>
+<div class="tab-item" onclick="navigate('calendar')"><div class="tab-icon">📅</div><div class="tab-label">Kalender</div></div>
+<div class="tab-item" onclick="navigate('todos')"><div class="tab-icon">✓</div><div class="tab-label">Aufgaben</div></div>
+<div class="tab-item" onclick="navigate('chat')"><div class="tab-icon">💬</div><div class="tab-label">Chat</div></div>
+<div class="tab-item" onclick="navigate('settings')"><div class="tab-icon">⚙️</div><div class="tab-label">Mehr</div></div>
+</div>
+</div>
+</div>
+
+<div id="eventModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<div style="font-weight:600;">Neuer Termin</div>
+<button onclick="closeModal('eventModal')" style="background:none;border:none;color:var(--ios-blue);cursor:pointer;">Abbrechen</button>
+</div>
+<div class="modal-body">
+<input type="text" id="eventTitle" class="ios-input" placeholder="Titel">
+<input type="date" id="eventDate" class="ios-input">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+<input type="checkbox" id="eventAllDay" onchange="toggleAllDay()" style="width:20px;height:20px;">
+<label for="eventAllDay">Ganztägig</label>
+</div>
+<div id="eventTimeFields">
+<input type="time" id="eventStartTime" class="ios-input" placeholder="Startzeit">
+<input type="time" id="eventEndTime" class="ios-input" placeholder="Endzeit">
+</div>
+<textarea id="eventDescription" class="ios-input" placeholder="Beschreibung (optional)" rows="3" style="resize:none;"></textarea>
+<button onclick="saveEvent()" class="ios-button">Speichern</button>
+</div>
+</div>
+</div>
+
+<div id="shiftModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<div style="font-weight:600;">Neue Schicht</div>
+<button onclick="closeModal('shiftModal')" style="background:none;border:none;color:var(--ios-blue);cursor:pointer;">Abbrechen</button>
+</div>
+<div class="modal-body">
+<input type="date" id="shiftDate" class="ios-input">
+<input type="time" id="shiftStart" class="ios-input" placeholder="Beginn">
+<input type="time" id="shiftEnd" class="ios-input" placeholder="Ende">
+<button onclick="saveShift()" class="ios-button">Speichern</button>
+</div>
+</div>
+</div>
+
+<div id="calendarModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<div style="font-weight:600;">Neuer Kalender</div>
+<button onclick="closeModal('calendarModal')" style="background:none;border:none;color:var(--ios-blue);cursor:pointer;">Abbrechen</button>
+</div>
+<div class="modal-body">
+<input type="text" id="calendarName" class="ios-input" placeholder="Kalender Name">
+<input type="color" id="calendarColor" class="ios-input" value="#007AFF">
+<button onclick="saveCalendar()" class="ios-button">Speichern</button>
+</div>
+</div>
+</div>
+
+<div id="editCalendarModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<div style="font-weight:600;">Kalender bearbeiten</div>
+<button onclick="closeModal('editCalendarModal')" style="background:none;border:none;color:var(--ios-blue);cursor:pointer;">Abbrechen</button>
+</div>
+<div class="modal-body">
+<input type="hidden" id="editCalendarId">
+<input type="text" id="editCalendarName" class="ios-input" placeholder="Kalender Name">
+<input type="color" id="editCalendarColor" class="ios-input">
+<div style="margin-top:16px;margin-bottom:8px;font-weight:600;">Benutzer hinzufügen</div>
+<input type="text" id="calUserInput" class="ios-input" placeholder="Benutzer-ID" style="margin:0;">
+<button onclick="addUserToCal()" class="ios-button ios-button-secondary" style="margin-bottom:16px;">Hinzufügen</button>
+<div id="calendarUsersList"></div>
+<button onclick="updateCalendar()" class="ios-button">Speichern</button>
+<button onclick="deleteCalendarConfirm()" class="ios-button ios-button-danger">Löschen</button>
+</div>
+</div>
+</div>
+
+<script>
+class DataStore{constructor(){this.events=this.load('events')||[];this.shifts=this.load('shifts')||[];this.todos=this.load('todos')||[];this.timeEntries=this.load('timeEntries')||[];this.currentSession=this.load('currentSession')||null;this.messages=this.load('messages')||[];this.passcode=this.load('passcode')||'1234';this.linkedUsers=this.load('linkedUsers')||[];this.currentUser=this.load('currentUser')||'user_'+Date.now();this.calendars=this.load('calendars')||[{id:Date.now(),name:'Hauptkalender',color:'#007AFF',users:[this.currentUser],createdBy:this.currentUser}];this.selectedCalendars=this.load('selectedCalendars')||[this.calendars[0].id];this.save('calendars',this.calendars);}load(key){const data=localStorage.getItem(key);return data?JSON.parse(data):null;}save(key,data){localStorage.setItem(key,JSON.stringify(data));}addCalendar(name,color){const cal={id:Date.now(),name:name,color:color||'#007AFF',users:[this.currentUser],createdBy:this.currentUser};this.calendars.push(cal);this.save('calendars',this.calendars);return cal;}updateCalendar(id,name,color){const cal=this.calendars.find(c=>c.id===id);if(cal){cal.name=name;cal.color=color;this.save('calendars',this.calendars);return true;}return false;}deleteCalendar(id){this.calendars=this.calendars.filter(c=>c.id!==id);this.events=this.events.filter(e=>e.calendarId!==id);this.save('calendars',this.calendars);this.save('events',this.events);}addUserToCalendar(calendarId,userId){const cal=this.calendars.find(c=>c.id===calendarId);if(cal&&!cal.users.includes(userId)){cal.users.push(userId);this.save('calendars',this.calendars);return true;}return false;}removeUserFromCalendar(calendarId,userId){const cal=this.calendars.find(c=>c.id===calendarId);if(cal){cal.users=cal.users.filter(u=>u!==userId);this.save('calendars',this.calendars);return true;}return false;}setSelectedCalendars(calendarIds){this.selectedCalendars=calendarIds;this.save('selectedCalendars',this.selectedCalendars);}addEvent(event){event.id=Date.now();if(!event.calendarId&&this.selectedCalendars.length>0){event.calendarId=this.selectedCalendars[0];}this.events.push(event);this.save('events',this.events);}getFilteredEvents(){if(!this.selectedCalendars||this.selectedCalendars.length===0)return this.events;return this.events.filter(e=>this.selectedCalendars.includes(e.calendarId));}addShift(shift){shift.id=Date.now();this.shifts.push(shift);this.save('shifts',this.shifts);}addTodo(todo){todo.id=Date.now();todo.completed=false;this.todos.push(todo);this.save('todos',this.todos);}toggleTodo(id){const todo=this.todos.find(t=>t.id===id);if(todo){todo.completed=!todo.completed;this.save('todos',this.todos);}}deleteTodo(id){this.todos=this.todos.filter(t=>t.id!==id);this.save('todos',this.todos);}clockIn(){this.currentSession={startTime:new Date().toISOString(),date:new Date().toISOString().split('T')[0]};this.save('currentSession',this.currentSession);}clockOut(){if(this.currentSession){const entry={id:Date.now(),date:this.currentSession.date,startTime:this.currentSession.startTime,endTime:new Date().toISOString()};this.timeEntries.push(entry);this.save('timeEntries',this.timeEntries);this.currentSession=null;this.save('currentSession',null);}}addMessage(text,type='text',data=null){const message={id:Date.now(),text:text,time:new Date().toISOString(),type:'sent',messageType:type,data:data,from:this.currentUser};this.messages.push(message);this.save('messages',this.messages);}clearMessages(){this.messages=[];this.save('messages',this.messages);}setPasscode(oldCode,newCode){if(oldCode===this.passcode){this.passcode=newCode;this.save('passcode',newCode);return true;}return false;}linkUser(userId){if(!this.linkedUsers.includes(userId)){this.linkedUsers.push(userId);this.save('linkedUsers',this.linkedUsers);return true;}return false;}unlinkUser(userId){this.linkedUsers=this.linkedUsers.filter(u=>u!==userId);this.save('linkedUsers',this.linkedUsers);}exportData(){return{events:this.events,shifts:this.shifts,todos:this.todos,timeEntries:this.timeEntries,messages:this.messages,calendars:this.calendars};}importData(data){if(data.events){this.events=data.events;this.save('events',this.events);}if(data.shifts){this.shifts=data.shifts;this.save('shifts',this.shifts);}if(data.todos){this.todos=data.todos;this.save('todos',this.todos);}if(data.timeEntries){this.timeEntries=data.timeEntries;this.save('timeEntries',this.timeEntries);}if(data.messages){this.messages=data.messages;this.save('messages',this.messages);}if(data.calendars){this.calendars=data.calendars;this.save('calendars',this.calendars);}}clearAll(){this.events=[];this.shifts=[];this.todos=[];this.timeEntries=[];this.currentSession=null;this.messages=[];this.calendars=[{id:Date.now(),name:'Hauptkalender',color:'#007AFF',users:[this.currentUser],createdBy:this.currentUser}];localStorage.clear();this.passcode='1234';this.save('passcode','1234');this.save('calendars',this.calendars);}}
+
+const store=new DataStore();let currentMonth=new Date();let chatUnlocked=false;let calendarView='month';let currentDayView=new Date();
+
+function navigate(pageName){if(pageName==='chat'&&!chatUnlocked){showLockScreen();return;}document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(pageName).classList.add('active');document.querySelectorAll('.tab-item,.sidebar-item').forEach(t=>t.classList.remove('active'));document.querySelectorAll(`[onclick="navigate('${pageName}')"]`).forEach(t=>t.classList.add('active'));const titles={dashboard:'Dashboard',calendar:'Kalender',shifts:'Schichten',timetracking:'Zeiterfassung',todos:'Aufgaben',chat:'Secret Chat',settings:'Einstellungen'};document.getElementById('navTitle').textContent=titles[pageName]||pageName;refreshPage(pageName);}
+
+function showLockScreen(){document.getElementById('lockScreen').classList.add('active');}
+function closeLock(){document.getElementById('lockScreen').classList.remove('active');}
+function unlockChat(){const input=document.getElementById('lockPasscode').value;if(input===store.passcode){chatUnlocked=true;closeLock();navigate('chat');}else{alert('Falsches Passwort!');document.getElementById('lockPasscode').value='';}}
+
+function refreshPage(pageName){switch(pageName){case 'dashboard':updateDashboard();break;case 'calendar':renderCalendarSelector();renderCalendarView();break;case 'shifts':renderShifts();break;case 'timetracking':renderTimeLog();updateClockStatus();break;case 'todos':renderTodos();break;case 'chat':renderChat();break;case 'settings':renderCalendarManagement();updateStorageInfo();break;}}
+
+function updateDashboard(){const now=new Date();const weekStart=new Date(now);weekStart.setDate(now.getDate()-now.getDay());let weekHours=0;store.timeEntries.forEach(entry=>{const entryDate=new Date(entry.date);if(entryDate>=weekStart){const start=new Date(entry.startTime);const end=new Date(entry.endTime);weekHours+=(end-start)/(1000*60*60);}});document.getElementById('weekHours').textContent=weekHours.toFixed(1)+'h';document.getElementById('completedTasks').textContent=store.todos.filter(t=>t.completed).length;document.getElementById('upcomingShifts').textContent=store.shifts.filter(s=>new Date(s.date)>=now).length;document.getElementById('pendingTodos').textContent=store.todos.filter(t=>!t.completed).length;const today=now.toISOString().split('T')[0];const todayEvents=store.events.filter(e=>e.date===today);const todayEventsDiv=document.getElementById('todayEvents');if(todayEvents.length===0){todayEventsDiv.innerHTML='<p style="color:var(--ios-text-secondary);">Keine Termine</p>';}else{todayEventsDiv.innerHTML=todayEvents.map(event=>`<div style="padding:8px 0;border-bottom:0.5px solid var(--ios-separator);"><div style="font-weight:600;">${event.title}</div><div style="font-size:15px;color:var(--ios-text-secondary);">${event.time||'Ganztägig'}</div></div>`).join('');}}
+
+function changeView(view){calendarView=view;document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.view-tab')[['month','week','day','list'].indexOf(view)].classList.add('active');renderCalendarView();}
+
+function prevPeriod(){if(calendarView==='month'){currentMonth.setMonth(currentMonth.getMonth()-1);}else if(calendarView==='week'){currentMonth.setDate(currentMonth.getDate()-7);}else if(calendarView==='day'){currentDayView.setDate(currentDayView.getDate()-1);}else if(calendarView==='list'){currentMonth.setMonth(currentMonth.getMonth()-1);}renderCalendarView();}
+
+function nextPeriod(){if(calendarView==='month'){currentMonth.setMonth(currentMonth.getMonth()+1);}else if(calendarView==='week'){currentMonth.setDate(currentMonth.getDate()+7);}else if(calendarView==='day'){currentDayView.setDate(currentDayView.getDate()+1);}else if(calendarView==='list'){currentMonth.setMonth(currentMonth.getMonth()+1);}renderCalendarView();}
+
+function renderCalendarView(){updateCalendarTitle();const container=document.getElementById('calendarViewContainer');if(calendarView==='month'){container.innerHTML=renderMonthView();}else if(calendarView==='week'){container.innerHTML=renderWeekView();}else if(calendarView==='day'){container.innerHTML=renderDayView();}else if(calendarView==='list'){container.innerHTML=renderListView();}}
+
+function updateCalendarTitle(){const monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];const titleEl=document.getElementById('calendarTitle');if(calendarView==='month'){titleEl.textContent=`${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;}else if(calendarView==='week'){const weekStart=getWeekStart(currentMonth);const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);titleEl.textContent=`${weekStart.getDate()}.${weekStart.getMonth()+1}. - ${weekEnd.getDate()}.${weekEnd.getMonth()+1}.${weekEnd.getFullYear()}`;}else if(calendarView==='day'){titleEl.textContent=currentDayView.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}else if(calendarView==='list'){titleEl.textContent=`${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;}}
+
+function getWeekStart(date){const d=new Date(date);const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);d.setDate(diff);return d;}
+
+function renderMonthView(){const year=currentMonth.getFullYear();const month=currentMonth.getMonth();const firstDay=new Date(year,month,1).getDay();const daysInMonth=new Date(year,month+1,0).getDate();let html='<div class="calendar-grid">';const dayHeaders=['So','Mo','Di','Mi','Do','Fr','Sa'];dayHeaders.forEach(day=>{html+=`<div style="text-align:center;font-size:13px;color:var(--ios-text-secondary);font-weight:600;">${day}</div>`;});for(let i=0;i<firstDay;i++){html+='<div></div>';}const today=new Date();for(let day=1;day<=daysInMonth;day++){const date=new Date(year,month,day);const dateStr=date.toISOString().split('T')[0];const dayEvents=store.getFilteredEvents().filter(e=>e.date===dateStr);const isToday=date.toDateString()===today.toDateString();let classes='calendar-day';if(isToday)classes+=' today';html+=`<div class="${classes}" onclick="selectDate('${dateStr}')" style="position:relative;">${day}`;if(dayEvents.length>0){html+=`<div style="display:flex;gap:2px;justify-content:center;margin-top:2px;position:absolute;bottom:4px;left:50%;transform:translateX(-50%);">`;dayEvents.slice(0,3).forEach(evt=>{const cal=store.calendars.find(c=>c.id===evt.calendarId);const color=cal?cal.color:'#007AFF';html+=`<span style="width:4px;height:4px;border-radius:50%;background:${color};"></span>`;});html+=`</div>`;}html+=`</div>`;}html+=`</div>`;return html;}
+
+function renderWeekView(){const weekStart=getWeekStart(currentMonth);let html='<div class="week-grid" style="max-height:500px;overflow-y:auto;">';html+='<div class="week-header"></div>';for(let i=0;i<7;i++){const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);const dayName=['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()];html+=`<div class="week-header">${dayName}<br>${d.getDate()}.${d.getMonth()+1}</div>`;}for(let hour=0;hour<24;hour++){html+=`<div class="week-time-slot">${hour.toString().padStart(2,'0')}:00</div>`;for(let day=0;day<7;day++){const d=new Date(weekStart);d.setDate(weekStart.getDate()+day);const dateStr=d.toISOString().split('T')[0];const hourEvents=store.getFilteredEvents().filter(e=>{if(e.date!==dateStr||e.allDay)return false;if(!e.startTime)return false;const eventHour=parseInt(e.startTime.split(':')[0]);return eventHour===hour;});html+=`<div class="week-day-slot">`;hourEvents.forEach(evt=>{const cal=store.calendars.find(c=>c.id===evt.calendarId);const color=cal?cal.color:'#007AFF';const startMin=evt.startTime?parseInt(evt.startTime.split(':')[1]):0;const top=(startMin/60)*100;let height=100;if(evt.endTime&&evt.startTime){const[sh,sm]=evt.startTime.split(':').map(Number);const[eh,em]=evt.endTime.split(':').map(Number);const durationMin=(eh*60+em)-(sh*60+sm);height=Math.min((durationMin/60)*100,100);}html+=`<div class="event-bar" style="background:${color};top:${top}%;height:${height}%;" title="${evt.title}">${evt.title}</div>`;});html+=`</div>`;};}html+=`</div>`;return html;}
+
+function renderDayView(){const dateStr=currentDayView.toISOString().split('T')[0];const dayEvents=store.getFilteredEvents().filter(e=>e.date===dateStr);let html='<div class="day-schedule">';const now=new Date();const isToday=dateStr===now.toISOString().split('T')[0];const currentMinute=now.getHours()*60+now.getMinutes();for(let hour=0;hour<24;hour++){html+=`<div class="day-time-slot">`;html+=`<div class="day-time-label">${hour.toString().padStart(2,'0')}:00</div>`;html+=`<div class="day-hour-area" style="min-height:60px;">`;const hourEvents=dayEvents.filter(e=>{if(e.allDay)return false;if(!e.startTime)return false;const eventHour=parseInt(e.startTime.split(':')[0]);return eventHour===hour;});hourEvents.forEach(evt=>{const cal=store.calendars.find(c=>c.id===evt.calendarId);const color=cal?cal.color:'#007AFF';const startMin=evt.startTime?parseInt(evt.startTime.split(':')[1]):0;const top=startMin;let height=60;if(evt.endTime&&evt.startTime){const[sh,sm]=evt.startTime.split(':').map(Number);const[eh,em]=evt.endTime.split(':').map(Number);const durationMin=(eh*60+em)-(sh*60+sm);height=durationMin;}html+=`<div class="event-bar" style="background:${color};top:${top}px;height:${height}px;" title="${evt.title}\n${evt.startTime} - ${evt.endTime}">${evt.title}<br><span style="font-size:10px;">${evt.startTime||''} - ${evt.endTime||''}</span></div>`;});if(isToday&&hour===Math.floor(currentMinute/60)){const nowTop=(currentMinute%60);html+=`<div class="now-line" style="top:${nowTop}px;"></div>`;}html+=`</div></div>`;}html+=`</div>`;return html;}
+
+function renderListView(){const events=store.getFilteredEvents().sort((a,b)=>new Date(a.date)-new Date(b.date));if(events.length===0){return'<div style="padding:40px;text-align:center;color:var(--ios-text-secondary);">Keine Termine</div>';}let html='';let lastDate='';events.forEach(evt=>{const eventDate=new Date(evt.date);const dateStr=eventDate.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});if(dateStr!==lastDate){html+=`<div class="list-date-header">${dateStr}</div>`;lastDate=dateStr;}const cal=store.calendars.find(c=>c.id===evt.calendarId);const color=cal?cal.color:'#007AFF';let timeStr='Ganztägig';if(evt.startTime&&evt.endTime){timeStr=`${evt.startTime} - ${evt.endTime}`;}else if(evt.startTime){timeStr=evt.startTime;}html+=`<div class="list-event-item"><div style="display:flex;align-items:start;gap:12px;"><span class="calendar-dot" style="background:${color};margin-top:4px;"></span><div style="flex:1;"><div style="font-weight:600;margin-bottom:4px;">${evt.title}</div><div style="font-size:15px;color:var(--ios-text-secondary);">${timeStr}</div>${evt.description?`<div style="font-size:14px;color:var(--ios-text-secondary);margin-top:4px;">${evt.description}</div>`:''}</div></div></div>`;});return html;}
+
+function renderCalendarSelector(){const selectorDiv=document.getElementById('calendarSelector');if(!selectorDiv)return;let html='<button class="calendar-chip'+(store.selectedCalendars.length===store.calendars.length?' selected':'')+'" style="background:#666;color:white;" onclick="selectAllCalendars()">Alle</button>';store.calendars.forEach(cal=>{const isSelected=store.selectedCalendars.includes(cal.id);html+=`<button class="calendar-chip${isSelected?' selected':''}" style="background:${cal.color};color:white;" onclick="toggleCalendar(${cal.id})">${cal.name}</button>`;});selectorDiv.innerHTML=html;}
+
+function toggleCalendar(calId){const index=store.selectedCalendars.indexOf(calId);if(index>-1){store.selectedCalendars.splice(index,1);if(store.selectedCalendars.length===0){store.selectedCalendars=[calId];}}else{store.selectedCalendars.push(calId);}store.setSelectedCalendars(store.selectedCalendars);renderCalendarSelector();renderCalendarView();}
+
+function selectAllCalendars(){store.selectedCalendars=store.calendars.map(c=>c.id);store.setSelectedCalendars(store.selectedCalendars);renderCalendarSelector();renderCalendarView();}
+
+function selectDate(date){document.getElementById('eventDate').value=date;openEventModal();}
+
+function toggleAllDay(){const allDay=document.getElementById('eventAllDay').checked;const timeFields=document.getElementById('eventTimeFields');timeFields.style.display=allDay?'none':'block';}
+
+function openCalendarModal(){document.getElementById('calendarModal').classList.add('active');document.getElementById('calendarName').value='';document.getElementById('calendarColor').value='#007AFF';}
+
+function saveCalendar(){const name=document.getElementById('calendarName').value;const color=document.getElementById('calendarColor').value;if(name){store.addCalendar(name,color);closeModal('calendarModal');renderCalendarManagement();renderCalendarSelector();alert('Kalender erstellt!');}}
+
+function renderCalendarManagement(){const mgmtDiv=document.getElementById('calendarManagement');if(!mgmtDiv)return;if(store.calendars.length===0){mgmtDiv.innerHTML='<p style="color:var(--ios-text-secondary);font-size:13px;">Keine Kalender</p>';return;}mgmtDiv.innerHTML=store.calendars.map(cal=>`<div class="calendar-item"><div style="display:flex;align-items:center;"><span class="calendar-dot" style="background:${cal.color};"></span><span>${cal.name}</span></div><button onclick="openEditCalendarModal(${cal.id})" style="background:var(--ios-blue);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;">Bearbeiten</button></div>`).join('');}
+
+function openEditCalendarModal(calId){const cal=store.calendars.find(c=>c.id===calId);if(!cal)return;document.getElementById('editCalendarId').value=calId;document.getElementById('editCalendarName').value=cal.name;document.getElementById('editCalendarColor').value=cal.color;renderCalendarUsers(calId);document.getElementById('editCalendarModal').classList.add('active');}
+
+function renderCalendarUsers(calId){const cal=store.calendars.find(c=>c.id===calId);const listDiv=document.getElementById('calendarUsersList');if(!cal||cal.users.length===0){listDiv.innerHTML='<p style="color:var(--ios-text-secondary);font-size:13px;">Keine Benutzer</p>';return;}listDiv.innerHTML=cal.users.map(userId=>`<div class="linked-user-item"><span>${userId}${userId===cal.createdBy?' (Besitzer)':''}</span>${userId!==cal.createdBy?`<button onclick="removeUserFromCalendar(${calId},'${userId}')" style="background:var(--ios-red);color:white;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12px;">Entfernen</button>`:''}</div>`).join('');}
+
+function addUserToCal(){const calId=parseInt(document.getElementById('editCalendarId').value);const userId=document.getElementById('calUserInput').value.trim();if(userId){if(store.addUserToCalendar(calId,userId)){document.getElementById('calUserInput').value='';renderCalendarUsers(calId);alert('Benutzer hinzugefügt!');}else{alert('Benutzer bereits hinzugefügt oder nicht gefunden!');}}}
+
+function removeUserFromCalendar(calId,userId){if(confirm('Benutzer entfernen?')){store.removeUserFromCalendar(calId,userId);renderCalendarUsers(calId);}}
+
+function updateCalendar(){const calId=parseInt(document.getElementById('editCalendarId').value);const name=document.getElementById('editCalendarName').value;const color=document.getElementById('editCalendarColor').value;if(name){if(store.updateCalendar(calId,name,color)){closeModal('editCalendarModal');renderCalendarManagement();renderCalendarSelector();alert('Kalender aktualisiert!');}}}
+
+function deleteCalendarConfirm(){const calId=parseInt(document.getElementById('editCalendarId').value);if(confirm('Kalender wirklich löschen? Alle Termine werden ebenfalls gelöscht!')){store.deleteCalendar(calId);closeModal('editCalendarModal');renderCalendarManagement();renderCalendarSelector();renderEvents();alert('Kalender gelöscht!');}}
+
+function renderShifts(){const shiftsDiv=document.getElementById('shiftsList');if(store.shifts.length===0){shiftsDiv.innerHTML='<div class="ios-list-item"><p style="color:var(--ios-text-secondary);">Keine Schichten</p></div>';return;}const sorted=[...store.shifts].sort((a,b)=>new Date(a.date)-new Date(b.date));shiftsDiv.innerHTML=sorted.map(shift=>{const date=new Date(shift.date);const formattedDate=date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});return`<div class="ios-list-item"><div>Schicht</div><div style="font-size:15px;color:var(--ios-text-secondary);">${formattedDate} • ${shift.startTime} - ${shift.endTime}</div></div>`;}).join('');}
+
+function updateClock(){const now=new Date();const timeStr=now.toLocaleTimeString('de-DE');document.getElementById('currentTime').textContent=timeStr;}
+setInterval(updateClock,1000);updateClock();
+
+function updateClockStatus(){const btn=document.getElementById('clockBtn');const statusText=document.getElementById('statusText');if(store.currentSession){btn.textContent='Ausstempeln';btn.className='ios-button ios-button-danger';statusText.textContent='Eingestempelt';}else{btn.textContent='Einstempeln';btn.className='ios-button';statusText.textContent='Nicht gestempelt';}}
+
+function toggleClock(){if(store.currentSession){store.clockOut();}else{store.clockIn();}updateClockStatus();renderTimeLog();updateDashboard();}
+
+function renderTimeLog(){const logDiv=document.getElementById('timeLog');if(store.timeEntries.length===0){logDiv.innerHTML='<div class="ios-list-item"><p style="color:var(--ios-text-secondary);">Keine Einträge</p></div>';return;}const sorted=[...store.timeEntries].sort((a,b)=>new Date(b.date)-new Date(a.date));logDiv.innerHTML=sorted.map(entry=>{const start=new Date(entry.startTime);const end=new Date(entry.endTime);const duration=((end-start)/(1000*60*60)).toFixed(2);const date=new Date(entry.date);const formattedDate=date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});return`<div class="ios-list-item"><div><div>${formattedDate}</div><div style="font-size:13px;color:var(--ios-text-secondary);">${start.toLocaleTimeString('de-DE')} - ${end.toLocaleTimeString('de-DE')}</div></div><div style="font-weight:600;color:var(--ios-blue);">${duration}h</div></div>`;}).join('');}
+
+function renderTodos(){const todoList=document.getElementById('todoList');if(store.todos.length===0){todoList.innerHTML='<div class="ios-list-item"><p style="color:var(--ios-text-secondary);">Keine Aufgaben</p></div>';return;}const sorted=[...store.todos].sort((a,b)=>{if(a.completed!==b.completed)return a.completed?1:-1;return 0;});todoList.innerHTML=sorted.map(todo=>`<div class="todo-item"><div class="todo-checkbox ${todo.completed?'checked':''}" onclick="toggleTodo(${todo.id})"></div><div style="flex:1;${todo.completed?'text-decoration:line-through;color:var(--ios-text-secondary);':''}">${todo.text}</div></div>`).join('');}
+
+function toggleTodo(id){store.toggleTodo(id);renderTodos();updateDashboard();}
+
+document.getElementById('todoInput')?.addEventListener('keypress',function(e){if(e.key==='Enter'&&this.value.trim()){store.addTodo({text:this.value.trim(),priority:'medium'});this.value='';renderTodos();updateDashboard();}});
+
+function renderChat(){const chatDiv=document.getElementById('chatMessages');if(store.messages.length===0){chatDiv.innerHTML='<p style="color:var(--ios-text-secondary);text-align:center;padding:20px;">Keine Nachrichten</p>';return;}chatDiv.innerHTML=store.messages.map(msg=>{const time=new Date(msg.time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});let content='';if(msg.messageType==='image'){content=`<img src="${msg.data}" class="message-image" onclick="window.open('${msg.data}','_blank')" alt="Bild">`;}else if(msg.messageType==='voice'){content=`<div class="message-voice"><button class="voice-play-btn" onclick="playVoice('${msg.data}')">▶</button><span>Sprachnachricht</span></div>`;}else{content=msg.text;}return`<div class="chat-message ${msg.type}"><div class="message-bubble">${content}<div style="font-size:11px;margin-top:4px;">${time}</div></div></div>`;}).join('');chatDiv.scrollTop=chatDiv.scrollHeight;}
+
+function sendMessage(){const input=document.getElementById('chatInput');if(input.value.trim()){store.addMessage(input.value.trim(),'text',null);input.value='';renderChat();updateStorageInfo();}}
+
+function sendImage(event){const file=event.target.files[0];if(file&&file.type.startsWith('image/')){const reader=new FileReader();reader.onload=(e)=>{const base64=e.target.result;store.addMessage('Bild gesendet','image',base64);renderChat();updateStorageInfo();};reader.readAsDataURL(file);}}
+
+let mediaRecorder=null;let audioChunks=[];function startVoiceRecording(){const btn=document.getElementById('voiceBtn');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='🎤 Sprache';return;}navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{mediaRecorder=new MediaRecorder(stream);audioChunks=[];mediaRecorder.ondataavailable=e=>{audioChunks.push(e.data);};mediaRecorder.onstop=()=>{const audioBlob=new Blob(audioChunks,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{const base64=reader.result;store.addMessage('Sprachnachricht','voice',base64);renderChat();updateStorageInfo();stream.getTracks().forEach(track=>track.stop());};reader.readAsDataURL(audioBlob);};mediaRecorder.start();btn.textContent='⏹️ Stop';}).catch(err=>{alert('Mikrofon-Zugriff verweigert!');});}
+
+function playVoice(base64){const audio=new Audio(base64);audio.play();}
+
+function linkUser(){const input=document.getElementById('linkUserInput');if(input.value.trim()){if(store.linkUser(input.value.trim())){input.value='';renderLinkedUsers();alert('Benutzer verknüpft!');}else{alert('Benutzer bereits verknüpft!');}}}
+
+function unlinkUser(userId){if(confirm('Benutzer entfernen?')){store.unlinkUser(userId);renderLinkedUsers();}}
+
+function renderLinkedUsers(){const listDiv=document.getElementById('linkedUsersList');if(store.linkedUsers.length===0){listDiv.innerHTML='<p style="color:var(--ios-text-secondary);font-size:13px;">Keine verknüpften Benutzer</p>';return;}listDiv.innerHTML=store.linkedUsers.map(user=>`<div class="linked-user-item"><span>${user}</span><button onclick="unlinkUser('${user}')" style="background:var(--ios-red);color:white;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12px;">Entfernen</button></div>`).join('');}
+
+document.getElementById('chatInput')?.addEventListener('keypress',function(e){if(e.key==='Enter'){sendMessage();}});
+
+function clearChat(){if(confirm('Alle Nachrichten löschen?')){store.clearMessages();renderChat();updateStorageInfo();}}
+
+function updateStorageInfo(){document.getElementById('eventsCount').textContent=store.events.length;document.getElementById('shiftsCount').textContent=store.shifts.length;document.getElementById('todosCount').textContent=store.todos.length;document.getElementById('messagesCount').textContent=store.messages.length;renderLinkedUsers();}
+
+function setPasscode(){const oldCode=document.getElementById('oldPasscode').value;const newCode=document.getElementById('newPasscode').value;if(!oldCode||!newCode){alert('Bitte beide Felder ausfüllen!');return;}if(newCode.length<4){alert('Neues Passwort muss mindestens 4 Zeichen haben!');return;}if(store.setPasscode(oldCode,newCode)){alert('Passwort erfolgreich geändert!');document.getElementById('oldPasscode').value='';document.getElementById('newPasscode').value='';}else{alert('Altes Passwort ist falsch!');}}
+
+function exportData(){const data=store.exportData();const json=JSON.stringify(data,null,2);const blob=new Blob([json],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`timeroster-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);}
+
+function importData(event){const file=event.target.files[0];if(file){const reader=new FileReader();reader.onload=(e)=>{try{const data=JSON.parse(e.target.result);if(confirm('Aktuelle Daten ersetzen?')){store.importData(data);alert('Daten importiert!');refreshPage('settings');}}catch(err){alert('Fehler beim Importieren!');}};reader.readAsText(file);}}
+
+function clearAllData(){if(confirm('Wirklich alle Daten löschen?')){if(confirm('Letzte Bestätigung!')){store.clearAll();alert('Alle Daten gelöscht.');location.reload();}}}
+
+function openEventModal(){document.getElementById('eventModal').classList.add('active');if(!document.getElementById('eventDate').value){document.getElementById('eventDate').value=new Date().toISOString().split('T')[0];}document.getElementById('eventAllDay').checked=false;toggleAllDay();}
+
+function openShiftModal(){document.getElementById('shiftModal').classList.add('active');document.getElementById('shiftDate').value=new Date().toISOString().split('T')[0];}
+
+function closeModal(modalId){document.getElementById(modalId).classList.remove('active');}
+
+function saveEvent(){const allDay=document.getElementById('eventAllDay').checked;const event={title:document.getElementById('eventTitle').value,date:document.getElementById('eventDate').value,allDay:allDay,startTime:allDay?null:document.getElementById('eventStartTime').value,endTime:allDay?null:document.getElementById('eventEndTime').value,description:document.getElementById('eventDescription').value||''};if(event.title&&event.date){store.addEvent(event);closeModal('eventModal');renderCalendarView();updateDashboard();document.getElementById('eventTitle').value='';document.getElementById('eventStartTime').value='';document.getElementById('eventEndTime').value='';document.getElementById('eventDescription').value='';document.getElementById('eventAllDay').checked=false;toggleAllDay();}}
+
+function saveShift(){const shift={date:document.getElementById('shiftDate').value,startTime:document.getElementById('shiftStart').value,endTime:document.getElementById('shiftEnd').value};if(shift.date&&shift.startTime&&shift.endTime){store.addShift(shift);closeModal('shiftModal');renderShifts();updateDashboard();document.getElementById('shiftStart').value='';document.getElementById('shiftEnd').value='';}}
+
+document.querySelectorAll('.modal').forEach(modal=>{modal.addEventListener('click',function(e){if(e.target===this){this.classList.remove('active');}});});
+
+updateDashboard();renderCalendarView();
+</script>
+</body>
+</html>
