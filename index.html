@@ -68,6 +68,9 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 .todo-checkbox.checked { background:var(--ios-blue); }
 .time-display { text-align:center; padding:40px 20px; }
 .current-time { font-size:48px; font-weight:700; color:var(--ios-blue); margin-bottom:20px; }
+@media (max-width:767px) {
+    .desktop-only { display:none; }
+}
 @media (min-width:768px) {
     .app { display:flex; max-width:1200px; margin:0 auto; padding-bottom:0; }
     .sidebar-desktop { width:280px; background:var(--ios-card); border-right:0.5px solid var(--ios-separator); position:sticky; top:0; height:100vh; }
@@ -79,7 +82,6 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
     .mobile-only { display:none; }
     .desktop-only { display:block; }
 }
-.desktop-only { display:none; }
 </style>
 </head>
 <body>
