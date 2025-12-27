@@ -207,14 +207,14 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 <div id="chat" class="page">
 <div class="ios-card">
 <div class="card-header">
-<div class="card-title">💬 Secret Chat</div>
+<div class="card-title">Secret Chat</div>
 <button onclick="clearChat()" style="background:var(--ios-red);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;">Löschen</button>
 </div>
 <div class="card-body">
 <div class="chat-messages" id="chatMessages"></div>
 <div style="display:flex;gap:8px;margin-bottom:12px;">
-<button onclick="document.getElementById('imageInput').click()" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">📷 Bild</button>
-<button onclick="startVoiceRecording()" id="voiceBtn" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">🎤 Sprache</button>
+<button onclick="document.getElementById('imageInput').click()" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">Bild</button>
+<button onclick="startVoiceRecording()" id="voiceBtn" class="ios-button ios-button-secondary" style="width:auto;padding:10px 16px;margin:0;">Sprache</button>
 <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="sendImage(event)">
 </div>
 <div class="chat-input-container">
@@ -241,8 +241,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 <div class="ios-card">
 <div class="card-header"><div class="card-title">Daten</div></div>
 <div class="card-body">
-<button onclick="exportData()" class="ios-button">📥 Exportieren</button>
-<button onclick="document.getElementById('importFile').click()" class="ios-button ios-button-secondary">📤 Importieren</button>
+<button onclick="exportData()" class="ios-button">Exportieren</button>
+<button onclick="document.getElementById('importFile').click()" class="ios-button ios-button-secondary">Importieren</button>
 <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
 </div>
 </div>
@@ -271,7 +271,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif; ba
 <div class="ios-list-item">Nachrichten: <span id="messagesCount">0</span></div>
 </div>
 </div>
-<button onclick="clearAllData()" class="ios-button ios-button-danger">🗑️ Alle Daten löschen</button>
+<button onclick="clearAllData()" class="ios-button ios-button-danger">Alle Daten löschen</button>
 </div>
 </div>
 
@@ -443,7 +443,7 @@ function sendMessage(){const input=document.getElementById('chatInput');if(input
 
 function sendImage(event){const file=event.target.files[0];if(file&&file.type.startsWith('image/')){const reader=new FileReader();reader.onload=(e)=>{const base64=e.target.result;store.addMessage('Bild gesendet','image',base64);renderChat();updateStorageInfo();};reader.readAsDataURL(file);}}
 
-let mediaRecorder=null;let audioChunks=[];function startVoiceRecording(){const btn=document.getElementById('voiceBtn');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='🎤 Sprache';return;}navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{mediaRecorder=new MediaRecorder(stream);audioChunks=[];mediaRecorder.ondataavailable=e=>{audioChunks.push(e.data);};mediaRecorder.onstop=()=>{const audioBlob=new Blob(audioChunks,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{const base64=reader.result;store.addMessage('Sprachnachricht','voice',base64);renderChat();updateStorageInfo();stream.getTracks().forEach(track=>track.stop());};reader.readAsDataURL(audioBlob);};mediaRecorder.start();btn.textContent='⏹️ Stop';}).catch(err=>{alert('Mikrofon-Zugriff verweigert!');});}
+let mediaRecorder=null;let audioChunks=[];function startVoiceRecording(){const btn=document.getElementById('voiceBtn');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='Sprache';return;}navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{mediaRecorder=new MediaRecorder(stream);audioChunks=[];mediaRecorder.ondataavailable=e=>{audioChunks.push(e.data);};mediaRecorder.onstop=()=>{const audioBlob=new Blob(audioChunks,{type:'audio/webm'});const reader=new FileReader();reader.onload=()=>{const base64=reader.result;store.addMessage('Sprachnachricht','voice',base64);renderChat();updateStorageInfo();stream.getTracks().forEach(track=>track.stop());};reader.readAsDataURL(audioBlob);};mediaRecorder.start();btn.textContent='Stop';}).catch(err=>{alert('Mikrofon-Zugriff verweigert!');});}
 
 function playVoice(base64){const audio=new Audio(base64);audio.play();}
 
